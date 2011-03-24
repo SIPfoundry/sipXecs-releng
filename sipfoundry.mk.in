@@ -1,0 +1,106 @@
+# Initial Version Copyright (C) 2010 eZuce, Inc., All Rights Reserved.
+# Licensed to the User under the LGPL license.
+#
+# Build and publishes rpms and ISOs to download.sipfoundry.org.
+#
+SF_REMOTE_DIR = /vol/download/pub/sipXecs
+SF_SSH_DOWNLOAD = download@download.sipfoundry.org
+SF_TARGET_DIR = $(SF_REMOTE_DIR)/$(PACKAGE_VERSION)
+SF_RSYNC_TARGET=$(SF_SSH_DOWNLOAD):
+S3_BUCKET = s3://sipXecs-pub
+REPO_FILES = \
+	sipxecs-$(PACKAGE_VERSION)-centos.repo \
+	sipxecs-$(PACKAGE_VERSION)-fedora.repo
+
+sf.init :
+	cd $(SRC); \
+	  git pull; \
+	  git submodule update; \
+	  autoreconf -if
+	$(SRC)/configure \
+	  --enable-rpm \
+	  --with-yum-proxy=http://localhost:3128 \
+	  --enable-centos-iso \
+	  ISO_DIR=$(HOME)/Downloads \
+	  RPM_DIST_DIR=$(RPM_DIST_DIR) \
+	  CENTOS_BASE_URL=http://ftp.linux.ncsu.edu/pub/CentOS \
+	  FEDORA_BASE_URL=http://ftp.linux.ncsu.edu/pub/fedora/linux
+
+sf.full : SF_FULL_OPT = distro.all.lib.rpm
+sf.partial sf.full :
+	$(MAKE) \
+	  distro.all.repo-chroot-init \
+	  $(SF_FULL_OPT) \
+	  distro.all.sipx.rpm \
+	  publish-rpms \
+	  iso-clean \
+	  iso \
+	  publish-iso
+
+help.publish-rpms = Push repo for $(TARGET_PLATFORM) version $(PACKAGE_VERSION) to sipfoundry download directory
+publish-rpms : distro.all.repo $(REPO_FILES) publish-files
+
+publish-files :
+	ssh $(SF_SSH_DOWNLOAD) 'test -d $(SF_TARGET_DIR) || mkdir -p  $(SF_TARGET_DIR)'
+	rsync --delete --archive --no-owner --verbose @RPM_DIST_DIR@/ $(SF_RSYNC_TARGET)$(SF_TARGET_DIR)/
+	rsync --archive --no-owner --verbose $(REPO_FILES) $(SF_RSYNC_TARGET)$(SF_REMOTE_DIR)/
+
+%-centos.repo : TARGET_DISTRO=CentOS
+%-fedora.repo : TARGET_DISTRO=Fedora
+$(REPO_FILES) :
+	echo "$$repofile_contents" > $@.tmp
+	mv $@.tmp $@
+
+help.publish-iso = Push ISO and md5 of ISO to SIPfoundry''s Amazon S3 account for download and rebuild webpage index
+publish-iso : publish-iso-clean publish-iso-upload publish-update-downloads;
+
+# Be very careful with this recipe, could delete entire s3 bucket if s3cmd del glob is wrong
+publish-iso-clean :
+	s3cmd del $(S3_BUCKET)/sipxecs-$(PACKAGE_VERSION)*
+
+publish-iso-upload :
+	find -maxdepth 1 \( -name '*.iso' -o -name '*.md5' \) -exec s3cmd put -P {} $(S3_BUCKET) \;
+
+help.publish-update-downloads = Normally called automatically as part of ISO uploads, but this regenerates ISO html download page. If you \
+  delete files manually in S3, you can safely rerun this as many times as you need to rebuild remote html page.
+publish-update-downloads : torrent.index publish-iso-index;
+
+publish-iso-index:
+	echo $$PublishIsoIndexHtml | \
+	  ssh $(SF_SSH_DOWNLOAD) 'm4 --include=$(SF_REMOTE_DIR)/.inc > $(SF_REMOTE_DIR)/ISO/index.html'
+
+torrent.index:
+	@s3cmd ls $(S3_BUCKET) | awk '{print $$4}' | \
+	  sed 's,s3://\(.*\)/\(.*\),<a href="http://s3.amazonaws.com/\1/\2\?torrent">\2</a>,g' | \
+	  ssh $(SF_SSH_DOWNLOAD) 'cat > $(SF_REMOTE_DIR)/.inc/torrent.index'
+	@s3cmd ls $(S3_BUCKET) | awk '{print $$4}' | \
+	  sed 's,s3://\(.*\)/\(.*\),<a href="http://s3.amazonaws.com/\1/\2\">\2</a>,g' | \
+	  ssh $(SF_SSH_DOWNLOAD) 'cat > $(SF_REMOTE_DIR)/.inc/iso.index'
+
+define PublishIsoIndexHtml
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+ <head>
+  <title>sipXecs ISO downloads</title>
+ </head>
+ <body>
+include(`header.html')
+<h2>Torrents</h2>
+<pre><img src="/icons/back.gif" alt="[DIR]" width="16" height="16"><a href="/pub/sipXecs">Parent Directory</a></pre>
+<pre>include(`torrent.index')</pre>
+<h2>Alternative to torrents</h2>
+If you are having trouble using torrents you can use these downloads
+<pre>include(`iso.index')
+</pre>
+include(`footer.html')
+</body></html>
+endef
+export PublishIsoIndexHtml
+
+define repofile_contents
+[sipXecs]
+name=sipXecs software for $(TARGET_DISTRO) $$releasever - $$basearch
+baseurl=http://download.sipfoundry.org/pub/sipXecs/$(PACKAGE_VERSION)/$(TARGET_DISTRO)_$$releasever/$$basearch
+gpgcheck=0
+endef
+export repofile_contents
