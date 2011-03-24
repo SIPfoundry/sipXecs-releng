@@ -1,7 +1,7 @@
 # Initial Version Copyright (C) 2010 eZuce, Inc., All Rights Reserved.
 # Licensed to the User under the LGPL license.
 #
-# Build and publishes rpms and ISOs to download.sipfoundry.org.
+# Builds and publishes RPMs and ISOs to download.sipfoundry.org.
 #
 SF_REMOTE_DIR = /vol/download/pub/sipXecs
 SF_SSH_DOWNLOAD = download@download.sipfoundry.org
@@ -17,30 +17,30 @@ sf.init :
 	  git pull; \
 	  git submodule update; \
 	  autoreconf -if
+	cd $(SRC)/custom; \
+	  git pull
 	$(SRC)/configure \
 	  --enable-rpm \
 	  --with-yum-proxy=http://localhost:3128 \
 	  --enable-centos-iso \
 	  ISO_DIR=$(HOME)/Downloads \
-	  RPM_DIST_DIR=$(RPM_DIST_DIR) \
 	  CENTOS_BASE_URL=http://ftp.linux.ncsu.edu/pub/CentOS \
 	  FEDORA_BASE_URL=http://ftp.linux.ncsu.edu/pub/fedora/linux
 
-sf.full : SF_FULL_OPT = distro.all.lib.rpm
-sf.partial sf.full :
+help.sf.all = Build dependencies and sipx rpms, iso and publish all
+sf.all : SF_FULL_OPT = lib.rpm
+
+help.sf.nodeps = Do not rebuild dependencies, but still rebuild sipx rpms, iso and publish all
+sf.nodeps sf.all : distro.all.sf.build sf.put-rpms iso-clean iso sf.put-iso
+
+sf.build :
 	$(MAKE) \
-	  distro.all.repo-chroot-init \
+	  repo-chroot-init \
 	  $(SF_FULL_OPT) \
 	  distro.all.sipx.rpm \
-	  publish-rpms \
-	  iso-clean \
-	  iso \
-	  publish-iso
 
-help.publish-rpms = Push repo for $(TARGET_PLATFORM) version $(PACKAGE_VERSION) to sipfoundry download directory
-publish-rpms : distro.all.repo $(REPO_FILES) publish-files
-
-publish-files :
+help.sf.put-rpms = Push repo for all platforms to sipfoundry download directory
+sf.put-rpms : distro.all.repo $(REPO_FILES)
 	ssh $(SF_SSH_DOWNLOAD) 'test -d $(SF_TARGET_DIR) || mkdir -p  $(SF_TARGET_DIR)'
 	rsync --delete --archive --no-owner --verbose @RPM_DIST_DIR@/ $(SF_RSYNC_TARGET)$(SF_TARGET_DIR)/
 	rsync --archive --no-owner --verbose $(REPO_FILES) $(SF_RSYNC_TARGET)$(SF_REMOTE_DIR)/
@@ -51,21 +51,23 @@ $(REPO_FILES) :
 	echo "$$repofile_contents" > $@.tmp
 	mv $@.tmp $@
 
-help.publish-iso = Push ISO and md5 of ISO to SIPfoundry''s Amazon S3 account for download and rebuild webpage index
-publish-iso : publish-iso-clean publish-iso-upload publish-update-downloads;
+help.sf.put-iso = Push ISO and md5 of ISO to SIPfoundry''s Amazon S3 account for download and rebuild webpage index
+sf.put-iso : sf.iso-s3-clean sf.iso-s3-put sf.iso-webpage;
 
 # Be very careful with this recipe, could delete entire s3 bucket if s3cmd del glob is wrong
-publish-iso-clean :
+help.sf.iso-s3-clean = Remove all ISOs from previous builds in S3. NOTE: ISOs will not be availble until iso-s3-put completes
+sf.iso-s3-clean :
 	s3cmd del $(S3_BUCKET)/sipxecs-$(PACKAGE_VERSION)*
 
-publish-iso-upload :
+help.sf.iso-s3-put = Push ISOs and md5s to s3
+sf.iso-s3-put :
 	find -maxdepth 1 \( -name '*.iso' -o -name '*.md5' \) -exec s3cmd put -P {} $(S3_BUCKET) \;
 
-help.publish-update-downloads = Normally called automatically as part of ISO uploads, but this regenerates ISO html download page. If you \
+help.iso-webpage = Normally called automatically as part of ISO uploads, but this regenerates ISO html download page. If you \
   delete files manually in S3, you can safely rerun this as many times as you need to rebuild remote html page.
-publish-update-downloads : torrent.index publish-iso-index;
+sf.iso-webpage : torrent.index sf.iso-index;
 
-publish-iso-index:
+sf.iso-index:
 	echo $$PublishIsoIndexHtml | \
 	  ssh $(SF_SSH_DOWNLOAD) 'm4 --include=$(SF_REMOTE_DIR)/.inc > $(SF_REMOTE_DIR)/ISO/index.html'
 
