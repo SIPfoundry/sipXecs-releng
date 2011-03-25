@@ -15,6 +15,7 @@ REPO_FILES = \
 sf.init :
 	cd $(SRC); \
 	  git pull; \
+	  git submodule init; \
 	  git submodule update; \
 	  autoreconf -if
 	cd $(SRC)/custom; \
@@ -27,17 +28,13 @@ sf.init :
 	  CENTOS_BASE_URL=http://ftp.linux.ncsu.edu/pub/CentOS \
 	  FEDORA_BASE_URL=http://ftp.linux.ncsu.edu/pub/fedora/linux
 
-help.sf.all = Build dependencies and sipx rpms, iso and publish all
 sf.all : SF_FULL_OPT = lib.rpm
 
+help.sf.all = Build dependencies and sipx rpms, iso and publish all
 help.sf.nodeps = Do not rebuild dependencies, but still rebuild sipx rpms, iso and publish all
 sf.nodeps sf.all : distro.all.sf.build sf.put-rpms iso-clean iso sf.put-iso
 
-sf.build :
-	$(MAKE) \
-	  repo-chroot-init \
-	  $(SF_FULL_OPT) \
-	  distro.all.sipx.rpm \
+sf.build :; $(MAKE) repo-chroot-init $(SF_FULL_OPT) sipx.rpm
 
 help.sf.put-rpms = Push repo for all platforms to sipfoundry download directory
 sf.put-rpms : distro.all.repo $(REPO_FILES)
@@ -45,9 +42,10 @@ sf.put-rpms : distro.all.repo $(REPO_FILES)
 	rsync --delete --archive --no-owner --verbose @RPM_DIST_DIR@/ $(SF_RSYNC_TARGET)$(SF_TARGET_DIR)/
 	rsync --archive --no-owner --verbose $(REPO_FILES) $(SF_RSYNC_TARGET)$(SF_REMOTE_DIR)/
 
+.PHONY : $(REPO_FILES)
 %-centos.repo : TARGET_DISTRO=CentOS
 %-fedora.repo : TARGET_DISTRO=Fedora
-$(REPO_FILES) :
+$(REPO_FILES) : Makefile
 	echo "$$repofile_contents" > $@.tmp
 	mv $@.tmp $@
 
