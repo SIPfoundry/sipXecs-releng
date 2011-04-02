@@ -28,15 +28,13 @@ sf.init :
 	  CENTOS_BASE_URL=http://ftp.linux.ncsu.edu/pub/CentOS \
 	  FEDORA_BASE_URL=http://ftp.linux.ncsu.edu/pub/fedora/linux
 
-
-
-
 help.sf.all = Build dependencies and sipx rpms, iso and publish all
-help.sf.nodeps = Do not rebuild dependencies, but still rebuild sipx rpms, iso and publish all
-sf.all sf.nodeps : sf.% : distro.all.sf.build-% sf.put-rpms iso-clean iso sf.put-iso
-
-sf.build-all : repo-chroot-init lib.rpm sipx.rpm
-sf.build-nodeps : repo-chroot-init sipx.rpm
+help.sf.quick = Do not rebuild dependencies or language packs, but still rebuild sipx rpms, iso and publish all
+help.sf.nodeps = Do not rebuild dependencies, but still rebuild sipx and lang rpms, iso and publish all
+sf.all sf.quick sf.nodeps : sf.% : distro.all.repo-chroot-init distro.all.sf.build-% sf.put-rpms iso-clean iso sf.put-iso
+sf.build-all : lib.rpm lang.rpm sipx.rpm
+sf.build-nodeps : lang.rpm sipx.rpm
+sf.build-quick : sipx.rpm
 
 help.sf.put-rpms = Push repo for all platforms to sipfoundry download directory
 sf.put-rpms : distro.all.repo $(REPO_FILES)
