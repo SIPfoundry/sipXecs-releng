@@ -28,10 +28,13 @@ sf.init :
 	  CENTOS_BASE_URL=http://ftp.linux.ncsu.edu/pub/CentOS \
 	  FEDORA_BASE_URL=http://ftp.linux.ncsu.edu/pub/fedora/linux
 
+help.sf.iso = Build and publish fresh new ISO
+sf.iso : iso-clean iso sf.put-iso
+
 help.sf.all = Build dependencies and sipx rpms, iso and publish all
 help.sf.quick = Do not rebuild dependencies or language packs, but still rebuild sipx rpms, iso and publish all
 help.sf.nodeps = Do not rebuild dependencies, but still rebuild sipx and lang rpms, iso and publish all
-sf.all sf.quick sf.nodeps : sf.% : distro.all.repo-chroot-init distro.all.sf.build-% sf.put-rpms iso-clean iso sf.put-iso
+sf.all sf.quick sf.nodeps : sf.% : distro.all.repo-chroot-init distro.all.sf.build-% sf.put-rpms 
 sf.build-all : lib.rpm lang.rpm sipx.rpm
 sf.build-nodeps : lang.rpm sipx.rpm
 sf.build-quick : sipx.rpm
@@ -39,7 +42,8 @@ sf.build-quick : sipx.rpm
 help.sf.put-rpms = Push repo for all platforms to sipfoundry download directory
 sf.put-rpms : distro.all.repo $(REPO_FILES)
 	ssh $(SF_SSH_DOWNLOAD) 'test -d $(SF_TARGET_DIR) || mkdir -p  $(SF_TARGET_DIR)'
-	rsync --delete --archive --no-owner --verbose @RPM_DIST_DIR@/ $(SF_RSYNC_TARGET)$(SF_TARGET_DIR)/
+	rsync --delete --archive --no-owner --verbose --exclude=build.log \
+	  @RPM_DIST_DIR@/ $(SF_RSYNC_TARGET)$(SF_TARGET_DIR)/
 	rsync --archive --no-owner --verbose $(REPO_FILES) $(SF_RSYNC_TARGET)$(SF_REMOTE_DIR)/
 
 .PHONY : $(REPO_FILES)
