@@ -3,11 +3,13 @@
 #
 # Builds and publishes RPMs and ISOs to download.sipfoundry.org.
 #
-SF_REMOTE_DIR = /vol/download/pub/sipXecs
+SF_STAGING_ID = @SF_STAGING_ID@
+SF_PATH = pub/sipXecs$(SF_STAGING_ID)
+SF_REMOTE_DIR = /vol/download/$(SF_PATH)
 SF_SSH_DOWNLOAD = download@download.sipfoundry.org
 SF_TARGET_DIR = $(SF_REMOTE_DIR)/$(PACKAGE_VERSION)
 SF_RSYNC_TARGET=$(SF_SSH_DOWNLOAD):
-S3_BUCKET = s3://sipXecs-pub
+S3_BUCKET = s3://sipXecs$(SF_STAGING_ID)
 REPO_FILES = \
 	sipxecs-$(PACKAGE_VERSION)-centos.repo \
 	sipxecs-$(PACKAGE_VERSION)-fedora.repo
@@ -28,10 +30,13 @@ sf.init :
 	  CENTOS_BASE_URL=http://ftp.linux.ncsu.edu/pub/CentOS \
 	  FEDORA_BASE_URL=http://ftp.linux.ncsu.edu/pub/fedora/linux
 
+help.sf.iso = Build and publish fresh new ISO
+sf.iso : iso-clean iso sf.put-iso
+
 help.sf.all = Build dependencies and sipx rpms, iso and publish all
 help.sf.quick = Do not rebuild dependencies or language packs, but still rebuild sipx rpms, iso and publish all
 help.sf.nodeps = Do not rebuild dependencies, but still rebuild sipx and lang rpms, iso and publish all
-sf.all sf.quick sf.nodeps : sf.% : distro.all.repo-chroot-init distro.all.sf.build-% sf.put-rpms iso-clean iso sf.put-iso
+sf.all sf.quick sf.nodeps : sf.% : distro.all.repo-chroot-init distro.all.sf.build-%
 sf.build-all : lib.rpm lang.rpm sipx.rpm
 sf.build-nodeps : lang.rpm sipx.rpm
 sf.build-quick : sipx.rpm
@@ -87,7 +92,7 @@ define PublishIsoIndexHtml
  <body>
 include(`header.html')
 <h2>Torrents</h2>
-<pre><img src="/icons/back.gif" alt="[DIR]" width="16" height="16"><a href="/pub/sipXecs">Parent Directory</a></pre>
+<pre><img src="/icons/back.gif" alt="[DIR]" width="16" height="16"><a href="/$(SF_PATH)">Parent Directory</a></pre>
 <pre>include(`torrent.index')</pre>
 <h2>Alternative to torrents</h2>
 If you are having trouble using torrents you can use these downloads
@@ -101,7 +106,7 @@ export PublishIsoIndexHtml
 define repofile_contents
 [sipXecs]
 name=sipXecs software for $(TARGET_DISTRO) $$releasever - $$basearch
-baseurl=http://download.sipfoundry.org/pub/sipXecs/$(PACKAGE_VERSION)/$(TARGET_DISTRO)_$$releasever/$$basearch
+baseurl=http://download.sipfoundry.org/$(SF_PATH)/$(PACKAGE_VERSION)/$(TARGET_DISTRO)_$$releasever/$$basearch
 gpgcheck=0
 endef
 export repofile_contents
