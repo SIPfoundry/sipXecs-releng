@@ -9,7 +9,7 @@ SF_REMOTE_DIR = /vol/download/$(SF_PATH)
 SF_SSH_DOWNLOAD = download@download.sipfoundry.org
 SF_TARGET_DIR = $(SF_REMOTE_DIR)/$(PACKAGE_VERSION)
 SF_RSYNC_TARGET=$(SF_SSH_DOWNLOAD):
-S3_BUCKET = s3://sipXecs$(SF_STAGING_ID)
+S3_BUCKET = s3://sipXecs$(firstword $(SF_STAGING_ID) -pub)
 REPO_FILES = \
 	sipxecs-$(PACKAGE_VERSION)-centos.repo \
 	sipxecs-$(PACKAGE_VERSION)-fedora.repo
