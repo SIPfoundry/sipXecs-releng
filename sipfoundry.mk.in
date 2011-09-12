@@ -27,8 +27,7 @@ sf.init :
 	  --with-yum-proxy=http://localhost:3128 \
 	  --enable-centos-iso \
 	  ISO_DIR=$(HOME)/Downloads \
-	  CENTOS_BASE_URL=http://ftp.linux.ncsu.edu/pub/CentOS \
-	  FEDORA_BASE_URL=http://ftp.linux.ncsu.edu/pub/fedora/linux
+	  MIRROR_SITE=http://ftp.linux.ncsu.edu/pub
 
 help.sf.iso = Build and publish fresh new ISO
 sf.iso : iso-clean iso sf.put-iso
