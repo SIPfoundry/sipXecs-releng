@@ -14,6 +14,9 @@ REPO_FILES = \
 	sipxecs-$(PACKAGE_VERSION)-centos.repo \
 	sipxecs-$(PACKAGE_VERSION)-fedora.repo
 
+
+# Site http://ftp.linux.ncsu.edu/pub is not very reliable, rit site however has been 
+# more reliable
 sf.init :
 	cd $(SRC); \
 	  git pull; \
@@ -25,9 +28,13 @@ sf.init :
 	$(SRC)/configure \
 	  --enable-rpm \
 	  --with-yum-proxy=http://localhost:3128 \
+	  --disable-pull-missing-rpms \
 	  --enable-centos-iso \
 	  ISO_DIR=$(HOME)/Downloads \
-	  MIRROR_SITE=http://ftp.linux.ncsu.edu/pub
+	  MIRROR_SITE=http://mirrors.rit.edu \
+	  FEDORA_ARCHIVE_BASE_URL=http://dl.fedoraproject.org/pub/archive/fedora/linux \
+	  ALL_DISTROS="fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64" \
+	  SF_STAGING_ID=
 
 help.sf.iso = Build and publish fresh new ISO
 sf.iso : iso-clean iso sf.put-iso
@@ -68,18 +75,15 @@ sf.iso-s3-put :
 
 help.iso-webpage = Normally called automatically as part of ISO uploads, but this regenerates ISO html download page. If you \
   delete files manually in S3, you can safely rerun this as many times as you need to rebuild remote html page.
-sf.iso-webpage : torrent.index sf.iso-index;
+sf.iso-webpage : iso.index sf.iso-index;
 
 sf.iso-index:
 	echo $$PublishIsoIndexHtml | \
 	  ssh $(SF_SSH_DOWNLOAD) 'm4 --include=$(SF_REMOTE_DIR)/.inc > $(SF_REMOTE_DIR)/ISO/index.html'
 
-torrent.index:
+iso.index:
 	@s3cmd ls $(S3_BUCKET) | awk '{print $$4}' | \
-	  sed 's,s3://\(.*\)/\(.*\),<a href="http://s3.amazonaws.com/\1/\2\?torrent">\2</a>,g' | \
-	  ssh $(SF_SSH_DOWNLOAD) 'cat > $(SF_REMOTE_DIR)/.inc/torrent.index'
-	@s3cmd ls $(S3_BUCKET) | awk '{print $$4}' | \
-	  sed 's,s3://\(.*\)/\(.*\),<a href="http://s3.amazonaws.com/\1/\2\">\2</a>,g' | \
+	  sed 's,s3://\(.*\)/\(.*\),<a href="http://download.sipfoundry.org/pub/sipXecs$(SF_STAGING_ID)/ISO/\2\">\2</a>,g' | \
 	  ssh $(SF_SSH_DOWNLOAD) 'cat > $(SF_REMOTE_DIR)/.inc/iso.index'
 
 define PublishIsoIndexHtml
@@ -90,11 +94,7 @@ define PublishIsoIndexHtml
  </head>
  <body>
 include(`header.html')
-<h2>Torrents</h2>
 <pre><img src="/icons/back.gif" alt="[DIR]" width="16" height="16"><a href="/$(SF_PATH)">Parent Directory</a></pre>
-<pre>include(`torrent.index')</pre>
-<h2>Alternative to torrents</h2>
-If you are having trouble using torrents you can use these downloads
 <pre>include(`iso.index')
 </pre>
 include(`footer.html')
