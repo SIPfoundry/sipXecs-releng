@@ -34,7 +34,7 @@ sf.init :
 	  MIRROR_SITE=http://mirrors.rit.edu \
 	  FEDORA_ARCHIVE_BASE_URL=http://dl.fedoraproject.org/pub/archive/fedora/linux \
 	  ALL_DISTROS="fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64" \
-	  SF_STAGING_ID=
+	  SF_STAGING_ID=-stage
 
 help.sf.iso = Build and publish fresh new ISO
 sf.iso : iso-clean iso sf.put-iso
