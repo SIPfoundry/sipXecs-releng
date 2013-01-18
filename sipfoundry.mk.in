@@ -3,17 +3,17 @@
 #
 # Builds and publishes RPMs and ISOs to download.sipfoundry.org.
 #
-SF_STAGING_ID = @SF_STAGING_ID@
-SF_PATH = pub/sipXecs$(SF_STAGING_ID)
+SF_STAGING_ID = $(firstword @SF_STAGING_ID@ $(notdir $(abspath .)))
+SF_PATH = pub/$(SF_STAGING_ID)
 SF_REMOTE_DIR = /vol/download/$(SF_PATH)
 SF_SSH_DOWNLOAD = download@download.sipfoundry.org
 SF_TARGET_DIR = $(SF_REMOTE_DIR)/$(PACKAGE_VERSION)
 SF_RSYNC_TARGET=$(SF_SSH_DOWNLOAD):
-S3_BUCKET = s3://sipXecs$(firstword $(SF_STAGING_ID) -pub)
+S3_ID = $(subst sipXecs-sipXecs,sipXecs-pub,sipXecs-$(SF_STAGING_ID))
+S3_BUCKET = s3://$(S3_ID)
 REPO_FILES = \
 	sipxecs-$(PACKAGE_VERSION)-centos.repo \
 	sipxecs-$(PACKAGE_VERSION)-fedora.repo
-
 
 # Site http://ftp.linux.ncsu.edu/pub is not very reliable, rit site however has been 
 # more reliable
@@ -33,8 +33,7 @@ sf.init :
 	  ISO_DIR=$(HOME)/Downloads \
 	  MIRROR_SITE=http://mirrors.rit.edu \
 	  FEDORA_ARCHIVE_BASE_URL=http://dl.fedoraproject.org/pub/archive/fedora/linux \
-	  ALL_DISTROS="fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64" \
-	  SF_STAGING_ID=-stage
+	  ALL_DISTROS="fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64"
 
 help.sf.iso = Build and publish fresh new ISO
 sf.iso : iso-clean iso sf.put-iso
@@ -83,7 +82,7 @@ sf.iso-index:
 
 iso.index:
 	@s3cmd ls $(S3_BUCKET) | awk '{print $$4}' | \
-	  sed 's,s3://\(.*\)/\(.*\),<a href="http://download.sipfoundry.org/pub/sipXecs$(SF_STAGING_ID)/ISO/\2\">\2</a>,g' | \
+	  sed 's,s3://\(.*\)/\(.*\),<a href="http://download.sipfoundry.org/pub/$(SF_STAGING_ID)/ISO/\2\">\2</a>,g' | \
 	  ssh $(SF_SSH_DOWNLOAD) 'cat > $(SF_REMOTE_DIR)/.inc/iso.index'
 
 define PublishIsoIndexHtml
