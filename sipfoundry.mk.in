@@ -20,6 +20,7 @@ sf.configure : sf.$(SF_BRANCH);
 
 sf.update :
 	cd $(SRC); \
+	  git checkout $(SF_BRANCH); \
 	  git pull origin $(SF_BRANCH); \
 	  git submodule init; \
 	  git submodule update; \
