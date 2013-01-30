@@ -15,16 +15,27 @@ REPO_FILES = \
 	sipxecs-$(PACKAGE_VERSION)-centos.repo \
 	sipxecs-$(PACKAGE_VERSION)-fedora.repo
 
-# Site http://ftp.linux.ncsu.edu/pub is not very reliable, rit site however has been 
-# more reliable
-sf.init :
+SF_BRANCH=$(notdir $(abspath .))
+sf.configure : sf.$(SF_BRANCH);
+
+sf.update :
 	cd $(SRC); \
-	  git pull; \
+	  git pull origin $(SF_BRANCH); \
 	  git submodule init; \
 	  git submodule update; \
 	  autoreconf -if
 	cd $(SRC)/custom; \
 	  git pull
+
+# Site http://ftp.linux.ncsu.edu/pub is not very reliable, rit site however has been 
+# more reliable
+_ALL_DISTROS = centos-6-x86_64
+sf.release-4.6 : _REPO_PORT=40460
+sf.release-4.6 : _ALL_DISTROS=fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64
+sf.release-4.6-updates : _REPO_PORT=40461
+sf.release-4.6-update-2 : _REPO_PORT=40462
+sf.master : _REPO_PORT=40470
+sf.release-4.6 sf.release-4.6-updates sf.release-4.6-update-2 sf.master :
 	$(SRC)/configure \
 	  --enable-rpm \
 	  --with-yum-proxy=http://localhost:3128 \
@@ -33,18 +44,14 @@ sf.init :
 	  ISO_DIR=$(HOME)/Downloads \
 	  MIRROR_SITE=http://mirrors.rit.edu \
 	  FEDORA_ARCHIVE_BASE_URL=http://dl.fedoraproject.org/pub/archive/fedora/linux \
-	  ALL_DISTROS="fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64"
+	  ALL_DISTROS="$(_ALL_DISTROS)" \
+	  REPO_PORT=$(_REPO_PORT)
 
 help.sf.iso = Build and publish fresh new ISO
 sf.iso : iso-clean iso sf.put-iso
 
-help.sf.all = Build dependencies and sipx rpms, iso and publish all
-help.sf.quick = Do not rebuild dependencies or language packs, but still rebuild sipx rpms, iso and publish all
-help.sf.nodeps = Do not rebuild dependencies, but still rebuild sipx and lang rpms, iso and publish all
-sf.all sf.quick sf.nodeps : sf.% : distro.all.repo-chroot-init distro.all.sf.build-%
-sf.build-all : lib.rpm lang.rpm sipx.rpm
-sf.build-nodeps : lang.rpm sipx.rpm
-sf.build-quick : sipx.rpm
+help.sf.build = Build sipx and app rpms
+sf.build : distro.all.repo-quick-update distro.all.sipx.rpm distro.all.app.rpm
 
 help.sf.put-rpms = Push repo for all platforms to sipfoundry download directory
 sf.put-rpms : distro.all.repo $(REPO_FILES)
