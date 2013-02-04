@@ -20,9 +20,10 @@ REPO_FILES = \
 	sipxecs-$(PACKAGE_VERSION)-centos.repo \
 	sipxecs-$(PACKAGE_VERSION)-fedora.repo
 
-SF_BRANCH=$(notdir $(abspath .))
-ci.configure : ci.$(SF_BRANCH);
+help.ci.configure = Run autoreconf and configure for this branch
+ci.configure : ci.$(SF_STAGING_ID);
 
+help.ci.update = Git pull all code on this branch
 ci.update :
 	cd $(SRC); \
 	  git pull origin; \
@@ -35,12 +36,12 @@ ci.update :
 # Site http://ftp.linux.ncsu.edu/pub is not very reliable, rit site however has been 
 # more reliable
 _ALL_DISTROS = centos-6-x86_64
-ci.release-4.6 : _REPO_PORT=40460
-ci.release-4.6 : _ALL_DISTROS=fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64
-ci.release-4.6-updates : _REPO_PORT=40461
-ci.release-4.6-update-2 : _REPO_PORT=40462
-ci.master : _REPO_PORT=40470
-ci.release-4.6 ci.release-4.6-updates ci.release-4.6-update-2 ci.master :
+ci.sf-%-stable : _ALL_DISTROS=fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64
+ci.sf-master : _ALL_DISTROS=fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64
+ci.sf-release-4.6.0-stable : _REPO_PORT=40460
+ci.sf-release-4.6.0-unstable : _REPO_PORT=40461
+ci.sf-master : _REPO_PORT=40470
+ci.sf-% :;
 	$(SRC)/configure \
 	  --enable-rpm \
 	  --with-yum-proxy=http://localhost:3128 \
@@ -52,7 +53,7 @@ ci.release-4.6 ci.release-4.6-updates ci.release-4.6-update-2 ci.master :
 	  ALL_DISTROS="$(_ALL_DISTROS)" \
 	  REPO_PORT=$(_REPO_PORT)
 
-help.sf.iso = Build and publish fresh new ISO
+help.ci.iso = Build and publish fresh new ISO
 ci.iso : iso-clean iso ci.put-iso
 
 help.ci.build = Build sipx and app rpms
