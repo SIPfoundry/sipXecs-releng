@@ -3,7 +3,7 @@
 #
 # Builds and publishes RPMs and ISOs to download.sipfoundry.org.
 #
-SF_STAGING_ID = $(notdir $(abspath ../))
+SF_STAGING_ID = $(subst sf-,,$(notdir $(abspath ../)))
 ifeq ($(SF_STAGING_ID),)
 SF_PATH = pub/sipXecs
 S3_ID = sipXecs-pub
@@ -36,12 +36,12 @@ ci.update :
 # Site http://ftp.linux.ncsu.edu/pub is not very reliable, rit site however has been 
 # more reliable
 _ALL_DISTROS = centos-6-x86_64
-ci.sf-%-stable : _ALL_DISTROS=fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64
-ci.sf-master : _ALL_DISTROS=fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64
-ci.sf-release-4.6.0-stable : _REPO_PORT=40460
-ci.sf-release-4.6.0-unstable : _REPO_PORT=40461
-ci.sf-master : _REPO_PORT=40470
-ci.sf-% :;
+ci.%-stable : _ALL_DISTROS=fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64
+ci.master : _ALL_DISTROS=fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64
+ci.release-4.6.0-stable : _REPO_PORT=40460
+ci.release-4.6.0-unstable : _REPO_PORT=40461
+ci.master : _REPO_PORT=40470
+ci.master ci.release-4.6.0-unstable ci.release-4.6.0-stable :;
 	$(SRC)/configure \
 	  --enable-rpm \
 	  --with-yum-proxy=http://localhost:3128 \
