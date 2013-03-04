@@ -29,6 +29,7 @@ ci.update :
 	  git pull origin; \
 	  git submodule init; \
 	  git submodule update; \
+	  git submodule foreach git fetch --tags; \
 	  autoreconf -if
 	cd $(SRC)/custom; \
 	  git pull origin
