@@ -31,7 +31,7 @@ ci.update :
 	  git submodule update; \
 	  autoreconf -if
 	cd $(SRC)/custom; \
-	  git pull
+	  git pull origin
 
 # Site http://ftp.linux.ncsu.edu/pub is not very reliable, rit site however has been 
 # more reliable
