@@ -25,14 +25,14 @@ ci.configure : ci.$(SF_STAGING_ID);
 
 help.ci.update = Git pull all code on this branch
 ci.update :
+	cd $(SRC)/custom; \
+	  git pull origin
 	cd $(SRC); \
 	  git pull origin; \
 	  git submodule init; \
 	  git submodule update; \
 	  git submodule foreach git fetch --tags; \
 	  autoreconf -if
-	cd $(SRC)/custom; \
-	  git pull origin
 
 # Site http://ftp.linux.ncsu.edu/pub is not very reliable, rit site however has been 
 # more reliable
@@ -46,7 +46,6 @@ ci.master ci.release-4.6.0-unstable ci.release-4.6.0-stable :;
 	$(SRC)/configure \
 	  --enable-rpm \
 	  --with-yum-proxy=http://localhost:3128 \
-	  --disable-pull-missing-rpms \
 	  --enable-centos-iso \
 	  ISO_DIR=$(HOME)/Downloads \
 	  MIRROR_SITE=http://mirrors.rit.edu \
@@ -58,7 +57,7 @@ help.ci.iso = Build and publish fresh new ISO
 ci.iso : iso-clean iso ci.put-iso
 
 help.ci.build = Build sipx and app rpms
-ci.build : distro.all.repo-quick-update distro.all.sipx.rpm
+ci.build : distro.all.repo-quick-update distro.all.lib.rpm distro.all.sipx.rpm
 
 help.ci.put-rpms = Push repo for all platforms to sipfoundry download directory
 ci.put-rpms : distro.all.repo $(REPO_FILES)
