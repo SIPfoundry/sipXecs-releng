@@ -48,7 +48,7 @@ ci.master ci.release-4.6.0-unstable ci.release-4.6.0-stable :;
 	  --with-yum-proxy=http://localhost:3128 \
 	  --enable-centos-iso \
 	  ISO_DIR=$(HOME)/Downloads \
-	  MIRROR_SITE=http://mirrors.rit.edu \
+	  MIRROR_SITE=http://download.sipfoundry.org/pub \
 	  FEDORA_ARCHIVE_BASE_URL=http://dl.fedoraproject.org/pub/archive/fedora/linux \
 	  ALL_DISTROS="$(_ALL_DISTROS)" \
 	  REPO_PORT=$(_REPO_PORT)
