@@ -20,39 +20,6 @@ REPO_FILES = \
 	sipxecs-$(PACKAGE_VERSION)-centos.repo \
 	sipxecs-$(PACKAGE_VERSION)-fedora.repo
 
-help.ci.configure = Run autoreconf and configure for this branch
-ci.configure : ci.$(SF_STAGING_ID);
-
-help.ci.update = Git pull all code on this branch
-ci.update :
-	cd $(SRC)/custom; \
-	  git pull origin
-	cd $(SRC); \
-	  git pull origin; \
-	  git submodule init; \
-	  git submodule update; \
-	  git submodule foreach git fetch --tags; \
-	  autoreconf -if
-
-# Site http://ftp.linux.ncsu.edu/pub is not very reliable, rit site however has been 
-# more reliable
-_ALL_DISTROS = centos-6-x86_64
-ci.%-stable : _ALL_DISTROS=fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64
-ci.master : _ALL_DISTROS=fedora-16-i386 fedora-16-x86_64 centos-6-i386 centos-6-x86_64
-ci.release-4.6.0-stable : _REPO_PORT=40460
-ci.release-4.6.0-unstable : _REPO_PORT=40461
-ci.master : _REPO_PORT=40470
-ci.master ci.release-4.6.0-unstable ci.release-4.6.0-stable :;
-	$(SRC)/configure \
-	  --enable-rpm \
-	  --with-yum-proxy=http://localhost:3128 \
-	  --enable-centos-iso \
-	  ISO_DIR=$(HOME)/Downloads \
-	  MIRROR_SITE=http://download.sipfoundry.org/pub \
-	  FEDORA_ARCHIVE_BASE_URL=http://dl.fedoraproject.org/pub/archive/fedora/linux \
-	  ALL_DISTROS="$(_ALL_DISTROS)" \
-	  REPO_PORT=$(_REPO_PORT)
-
 help.ci.iso = Build and publish fresh new ISO
 ci.iso : iso-clean iso ci.put-iso
 
