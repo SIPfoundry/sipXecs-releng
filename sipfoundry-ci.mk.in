@@ -62,7 +62,7 @@ ci.iso-index:
 
 iso.index:
 	@s3cmd ls $(S3_BUCKET) | awk '{print $$4}' | \
-	  sed 's,s3://\(.*\)/\(.*\),<a href="http://download.sipfoundry.org/pub/$(SF_STAGING_ID)/ISO/\2\">\2</a>,g' | \
+	  sed 's,s3://\(.*\)/\(.*\),<a href="http://download.sipfoundry.org/$(SF_PATH)/ISO/\2\">\2</a>,g' | \
 	  ssh $(SF_SSH_DOWNLOAD) 'cat > $(SF_REMOTE_DIR)/.inc/iso.index'
 
 define PublishIsoIndexHtml
