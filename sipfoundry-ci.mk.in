@@ -24,7 +24,7 @@ help.ci.iso = Build and publish fresh new ISO
 ci.iso : iso-clean iso ci.put-iso
 
 help.ci.build = Build sipx and app rpms
-ci.build : distro.all.repo-quick-update distro.all.lib.rpm distro.all.sipx.rpm
+ci.build : distro.all.repo-init distro.all.lib.rpm distro.all.sipx.rpm
 
 help.ci.put-rpms = Push repo for all platforms to sipfoundry download directory
 ci.put-rpms : distro.all.repo $(REPO_FILES)
